@@ -88,9 +88,9 @@ function runMyRoom(room) {
 
   manageSource(room)
 
-  manageLogistics(room, room.suppliers, room.creepsToFill)
-
   manageIdlers(room)
+
+  manageLogistics(room, room.suppliers, room.creepsToFill)
 
   manageHub(room)
 
@@ -113,6 +113,11 @@ function manageIdlers(room) {
     idler.say("🎧")
     if (idler.room.name !== room.name || coordUtils.isEdge(idler.pos)) {
       creepUtils.moveCreep(idler, { pos: roomUtils.getStartPos(room), range: 1 })
+      continue
+    }
+
+    if (idler.store.getUsedCapacity(RESOURCE_ENERGY)) {
+      room.suppliers.push(idler)
     }
   }
 }
