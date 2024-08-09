@@ -25,16 +25,21 @@ let manageUpgrade = function (room, upgraders) {
     },
   )
 
-  const energyDepot = roomUtils.getControllerLink(room) || roomUtils.getControllerContainer(room)
+  const energyDepot =
+    roomUtils.getControllerLink(room) ||
+    roomUtils.getControllerLinkPos(room).lookFor(LOOK_RESOURCES)[0] ||
+    roomUtils.getControllerContainer(room)
+
+  const isResource = energyDepot instanceof Resource
 
   const costs = pathUtils.getDefaultCostMatrix(room)
 
   const upgradeArea = getUpgradeArea(room)
 
-  const packResult = creepUtils.fillSpaceWithCreeps(upgradeArea, upgraders, costs)
+  creepUtils.fillSpaceWithCreeps(upgradeArea, upgraders, costs)
 
   for (const creep of upgraders) {
-    runUpgrader(room, creep, upgraders, controller, energyDepot, packResult)
+    runUpgrader(room, creep, upgraders, controller, energyDepot, isResource)
   }
 
   if (!room.memory.canSpawn) {
@@ -231,7 +236,7 @@ function getControllerMaxCarryPower(room) {
  * @param {StructureController} controller
  * @returns
  */
-function runUpgrader(room, creep, upgraders, controller, energyDepot) {
+function runUpgrader(room, creep, upgraders, controller, energyDepot, isResource) {
   if (creep.pos.getRangeTo(controller) > 3) {
     return
   }
@@ -259,14 +264,18 @@ function runUpgrader(room, creep, upgraders, controller, energyDepot) {
     return
   }
 
-  if (energyDepot.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
+  if (!isResource && energyDepot.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
     roomUtils.subtractSpawnBalance(room)
     creep.say("⏳", true)
     return
   }
 
   if (creep.pos.getRangeTo(energyDepot) <= 1) {
-    creep.withdraw(energyDepot, RESOURCE_ENERGY)
+    if (isResource) {
+      creep.pickup(energyDepot)
+    } else {
+      creep.withdraw(energyDepot, RESOURCE_ENERGY)
+    }
     return
   }
 

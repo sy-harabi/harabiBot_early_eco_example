@@ -41,6 +41,10 @@ let manageSource = function (room) {
 
   const activeSources = getActiveSources(room)
 
+  if (!activeSources) {
+    return
+  }
+
   const activeSourceIds = activeSources.sourceIds
 
   let y = 3
@@ -1031,7 +1035,7 @@ function getActiveSources(room) {
     return activeSources
   }
 
-  const numSpawn = roomUtils.getStructuresByType(room, STRUCTURE_SPAWN).length
+  const numSpawn = room.find(FIND_MY_SPAWNS).length
 
   const energyCapacityAvailable = room.energyCapacityAvailable
 
@@ -1055,6 +1059,10 @@ function getActiveSources(room) {
     return activeSources
   }
 
+  if (numSpawn === 0) {
+    return
+  }
+
   console.log("regenerate active sources")
 
   const result = (room.memory.activeSources = {
@@ -1068,10 +1076,6 @@ function getActiveSources(room) {
   })
 
   room.memory.remoteConstructed = undefined
-
-  if (numSpawn === 0) {
-    return result
-  }
 
   Memory.sourceInfos = Memory.sourceInfos || {}
 
@@ -1980,15 +1984,15 @@ function manageCreepList(room, sourceInfos, carryPower) {
     const constructed = info.constructed
 
     if (info.my) {
-      const linked = !!roomUtils.getSourceLinks(room)[sourceId]
+      info.linked = !!roomUtils.getSourceLinks(room)[sourceId]
 
-      if (linked) {
+      if (info.linked) {
         maxCarryPower = 0
       } else {
         maxCarryPower += 2 * info.distance * (energyPerTick - (constructed ? CONTAINER_REPAIR_LOSS_OWNED : 1))
       }
 
-      netIncome = computeSourceIncome(info, { constructed, linked })
+      netIncome = computeSourceIncome(info, { constructed, linked: info.linked })
     } else {
       if (info.constructing) {
         maxCarryPower = 0
@@ -2100,7 +2104,7 @@ function requestSourceWorkers(room, info, sourceId, minerRatio, haulerRatio) {
 
   if (minerRatio === 0) {
     const maxWork = Math.ceil(info.maxHarvestPower / HARVEST_POWER)
-    const body = spawnUtils.getMinerBody(minerEnergyCapacity, maxWork, true)
+    const body = spawnUtils.getMinerBody(minerEnergyCapacity, maxWork, info.linked)
     const memory = { role: "miner", sourceId }
     global.requestCreep(room, body, "miner", { memory, urgent: info.my })
     return true
@@ -2114,7 +2118,7 @@ function requestSourceWorkers(room, info, sourceId, minerRatio, haulerRatio) {
 
   if (minerRatio < 1 && info.numMiner < info.numOpen) {
     const maxWork = Math.ceil(info.maxHarvestPower / HARVEST_POWER)
-    const body = spawnUtils.getMinerBody(minerEnergyCapacity, maxWork, true)
+    const body = spawnUtils.getMinerBody(minerEnergyCapacity, maxWork, info.linked)
     const memory = { role: "miner", sourceId }
     global.requestCreep(room, body, "miner", { memory, urgent: false })
     return true

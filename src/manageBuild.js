@@ -26,13 +26,18 @@ let manageBuild = function (room, builders) {
     return
   }
 
-  const energyDepot = room.storage || roomUtils.getControllerContainer(room)
+  const energyDepot =
+    room.storage ||
+    roomUtils.getControllerLinkPos(room).lookFor(LOOK_RESOURCES)[0] ||
+    roomUtils.getControllerContainer(room)
+
+  const isResource = energyDepot instanceof Resource
 
   const priorityTargets = getPriorityTargets(constructionSites, ramparts, energyDepot)
 
   if (priorityTargets) {
     for (const creep of builders) {
-      runBuilder(room, creep, energyDepot, priorityTargets)
+      runBuilder(room, creep, energyDepot, priorityTargets, isResource)
     }
   }
 
@@ -87,7 +92,7 @@ let manageBuild = function (room, builders) {
  * @param {*} target
  * @returns
  */
-function runBuilder(room, creep, energyDepot, priorityTargets) {
+function runBuilder(room, creep, energyDepot, priorityTargets, isResource) {
   if (creep.spawning) {
     return
   }
@@ -130,7 +135,7 @@ function runBuilder(room, creep, energyDepot, priorityTargets) {
       return
     }
 
-    if (energyDepot.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
+    if (!isResource && energyDepot.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
       roomUtils.subtractSpawnBalance(room)
       return
     }
@@ -140,7 +145,11 @@ function runBuilder(room, creep, energyDepot, priorityTargets) {
       return
     }
 
-    if (creep.withdraw(energyDepot, RESOURCE_ENERGY) === OK) {
+    if (isResource) {
+      if (creep.pickup(energyDepot) === OK) {
+        creep.memory.targetId = undefined
+      }
+    } else if (creep.withdraw(energyDepot, RESOURCE_ENERGY) === OK) {
       creep.memory.targetId = undefined
     }
   }

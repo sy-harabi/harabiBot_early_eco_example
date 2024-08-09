@@ -61,7 +61,7 @@ global.requestCreep = function (room, body, role, options) {
 const spawnManager = {
   preTick() {
     for (const room of dataStorage.temp.myRooms) {
-      const spawns = roomUtils.getStructuresByType(room, STRUCTURE_SPAWN)
+      const spawns = room.find(FIND_MY_SPAWNS)
 
       room.freeSpawns = []
       room.memory.canSpawn = false
