@@ -1,0 +1,8 @@
+/.screeps.json
+/Gruntfile.js
+/node_modules
+/.eslintrc.js
+/.prettierrc.js
+/package-lock.json
+/package.json
+/src/test.js
