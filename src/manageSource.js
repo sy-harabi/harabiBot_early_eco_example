@@ -1356,7 +1356,7 @@ function runReserver(room, creep) {
  */
 function matchHauler(sourceInfos, hauler) {
   let targetId
-  let distance = Infinity
+  let score = 0
 
   const capacity = hauler.store.getFreeCapacity(RESOURCE_ENERGY)
 
@@ -1375,11 +1375,11 @@ function matchHauler(sourceInfos, hauler) {
       continue
     }
 
-    const currentDistance = info.distance
+    const currentScore = Math.min(capacity, expectedEnergy) / info.distance
 
-    if (currentDistance < distance) {
+    if (currentScore > score) {
       targetId = sourceId
-      distance = currentDistance
+      score = currentScore
     }
   }
 
