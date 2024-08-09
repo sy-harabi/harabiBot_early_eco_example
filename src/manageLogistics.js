@@ -129,10 +129,6 @@ let manageLogistics = function (room, haulers, creepsToFill = []) {
 
   const idlers = []
 
-  if (Object.keys(requests).length === 0) {
-    return
-  }
-
   for (const hauler of haulers) {
     if (!hauler.memory.startSupplying) {
       continue
@@ -160,6 +156,13 @@ let manageLogistics = function (room, haulers, creepsToFill = []) {
   }
 
   if (idlers.length === 0) {
+    return
+  }
+
+  if (Object.keys(requests).length === 0) {
+    if (idlers.length > 0) {
+      roomUtils.addSpawnBalance(room)
+    }
     return
   }
 
