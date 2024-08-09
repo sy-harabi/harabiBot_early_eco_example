@@ -14,6 +14,14 @@ const COMBAT_PARTS_AMOUNT = {
 }
 
 const creepUtils = {
+  getBodyCost(body) {
+    let result = 0
+    for (const part of body) {
+      result += BODYPART_COST[part.type || part]
+    }
+    return result
+  },
+
   /**
    *
    * @param {Creep} creep

@@ -2172,23 +2172,25 @@ function getRemotePath(room, sourceId) {
  * @returns
  */
 function computeRemoteSourceIncome(info, options = {}) {
-  let income = info.energyPerTick
+  let energyPerTick = info.energyPerTick
 
   if (info.type === constant.ROOM_TYPE_NORMAL) {
     if (!options.reserve) {
-      income *= 0.5
+      energyPerTick *= 0.5
     }
   }
 
-  const maxHarvestPower = getMaxHarvestPower(income, info.type, options.constructed)
+  const maxWork = Math.ceil(getMaxHarvestPower(energyPerTick, info.type, options.constructed) / HARVEST_POWER)
 
-  const minerCost = (maxHarvestPower * (options.constructed ? 70 : 80)) / (CREEP_LIFE_TIME - info.distance)
+  const minerBody = spawnUtils.getMinerBody(10000, maxWork, false)
 
-  const haulerCost = (info.distance * income * 0.04 * (options.constructed ? 75 : 100)) / CREEP_LIFE_TIME
+  const minerCost = creepUtils.getBodyCost(minerBody) / (CREEP_LIFE_TIME - info.distance)
+
+  const haulerCost = (info.distance * energyPerTick * 0.04 * (options.constructed ? 75 : 100)) / CREEP_LIFE_TIME
 
   const loss = options.constructed ? CONTAINER_REPAIR_LOSS : 1
 
-  return income - minerCost - haulerCost - loss
+  return energyPerTick - minerCost - haulerCost - loss
 }
 
 /**
@@ -2209,15 +2211,13 @@ function computeRemoteSourceSpawnUsage(info, options = {}) {
     }
   }
 
-  const maxHarvestPower = getMaxHarvestPower(energyPerTick, info.type, options.constructed)
-
-  const maxWork = Math.ceil(maxHarvestPower / HARVEST_POWER)
+  const maxWork = Math.ceil(getMaxHarvestPower(energyPerTick, info.type, options.constructed) / HARVEST_POWER)
 
   const minerBody = spawnUtils.getMinerBody(10000, maxWork)
 
   const haulerUsage = energyPerTick * info.distance * 0.04 * (options.constructed ? 1.5 : 2)
 
-  let result = minerBody.length + haulerUsage
+  let result = minerBody.length * (CREEP_LIFE_TIME / (CREEP_LIFE_TIME - info.distance)) + haulerUsage
 
   if (!options.rcl || options.rcl < 8) {
     const netIncome = computeRemoteSourceIncome(info, options)
@@ -2312,7 +2312,11 @@ function generateSourceInfo(room, source) {
 function computeSourceIncome(info, options = {}) {
   const energyPerTick = info.energyPerTick
 
-  const minerCost = 800 / (CREEP_LIFE_TIME - info.distance) // 6w3c1m or 5w5m1c
+  const minerBody = spawnUtils.getMinerBody(10000, energyPerTick, info.linked)
+
+  const cost = creepUtils.getBodyCost(minerBody)
+
+  const minerCost = cost / (CREEP_LIFE_TIME - info.distance) // 6w3c1m or 5w5m1c
 
   const haulerCost = options.linked
     ? 0
@@ -2334,13 +2338,19 @@ function computeSourceIncome(info, options = {}) {
 function computeSourceSpawnUsage(info, options) {
   let result = 0
 
-  result += 12 // miner
+  const energyPerTick = info.energyPerTick
+
+  const minerBody = spawnUtils.getMinerBody(10000, energyPerTick, info.linked)
+
+  const minerSpawnUsage = (minerBody.length * CREEP_LIFE_TIME) / (CREEP_LIFE_TIME - info.distance)
+
+  result += minerSpawnUsage
 
   result += info.linked
     ? 0
     : info.distance *
       0.04 *
-      (info.energyPerTick - (options.constructed ? CONTAINER_REPAIR_LOSS_OWNED : 1)) *
+      (energyPerTick - (options.constructed ? CONTAINER_REPAIR_LOSS_OWNED : 1)) *
       (options.constructed ? 1.5 : 2) // hauler
 
   if (!options.rcl || options.rcl < 8) {
